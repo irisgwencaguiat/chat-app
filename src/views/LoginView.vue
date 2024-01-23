@@ -64,6 +64,10 @@ const login = async () => {
       loginQuery.email = '';
       loginQuery.password = '';
       loginError.value = false;
+      // if (localStorage.getItem('user') !== null) {
+      //   axios.defaults.headers[
+      //     'Authorization'
+      //   ] = `Bearer ${localStorage.getItem('token')}`;
       await router.push('/chat-room');
     } catch (err) {
       loginError.value = true;

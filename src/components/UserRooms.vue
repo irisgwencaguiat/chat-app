@@ -3,7 +3,10 @@
     <div class="pt-4 px-4">
       <div class="px-3 flex flex-row justify-between">
         <h1 class="text-2xl font-bold">Chats</h1>
-        <i class="fa-solid fa-right-from-bracket text-2xl cursor-pointer"></i>
+        <i
+          @click="logout"
+          class="fa-solid fa-right-from-bracket text-2xl cursor-pointer"
+        ></i>
       </div>
 
       <div class="flex flex-row">
@@ -50,9 +53,30 @@
                 {{ room.user_rooms[0].user.last_name }}
               </h1>
               <!--              <h1 class="font-medium">{{ room.user_rooms[0].user.first_name }} {{ room.user_rooms[0].user.last_name }}</h1>-->
-              <div class="text-gray-500 text-sm flex flex-row">
+              <div
+                class="text-sm flex flex-row"
+                :class="[
+                  isAfterLastRead(
+                    room.latest_chat.created_at,
+                    room.user_rooms[0].last_read_at
+                  )
+                    ? 'text-black font-medium'
+                    : 'text-gray-500',
+                ]"
+              >
                 <p v-if="currentUser.id === room.latest_chat.user_id">You:</p>
-                <p class="pl-1">{{ room.latest_chat.message }}</p>
+                <!--                <p>-->
+                <!--                  {{ isRead(room.latest_chat.created_at, room.id) }}-->
+                <!--                </p>-->
+
+                <p class="pl-1">
+                  {{
+                    trimMessage(
+                      room.latest_chat.message,
+                      room.latest_chat.user_id
+                    )
+                  }}
+                </p>
               </div>
             </div>
           </li>
@@ -76,14 +100,6 @@
               </h1>
             </div>
           </li>
-          <!--          <li-->
-          <!--              class="w-full p-2 rounded hover:bg-gray-100 cursor-pointer flex flex-row">-->
-
-          <!--            <h1 class="flex items-center justify-center mr-3 w-12 h-12 rounded-full bg-violet-400 text-white">IG</h1>-->
-          <!--            <div>-->
-          <!--              <h1 class="font-medium flex items-center w-12 h-12">redseijuro</h1>-->
-          <!--            </div>-->
-          <!--          </li>-->
         </ul>
       </div>
     </div>
@@ -91,25 +107,38 @@
 </template>
 
 <script setup>
-import { onMounted, ref, defineEmits, reactive, onUpdated } from 'vue';
+import { ref } from 'vue';
 import axios from 'axios';
 import { storeToRefs } from 'pinia';
 import { useRoomStore } from '../stores/room';
 import { useChatStore } from '../stores/chat';
+import { useRouter } from 'vue-router';
+import moment from 'moment';
+import { useAuthStore } from '../stores/auth';
 
-const emit = defineEmits(['non-existent-room']);
+const router = useRouter();
 const currentUser = JSON.parse(localStorage.getItem('user'));
+const currentUserRooms = currentUser.user_rooms;
 const isRoomMode = ref(true);
 const searchQuery = ref('');
 const searchResults = ref(null);
 
 const { updateCurrentRoom, roomIsNotFound } = useRoomStore();
 const { fetchChats } = useChatStore();
+const { updateLastReadAt } = useAuthStore();
 const { rooms, currentRoom, noRoom, user } = storeToRefs(useRoomStore());
+
+const isAfterLastRead = (chatCreatedAt, userLastReadAt) => {
+  console.log('create:' + chatCreatedAt);
+  console.log('last_read:' + userLastReadAt);
+  console.log(moment(chatCreatedAt).isAfter(moment(userLastReadAt)));
+  return moment(chatCreatedAt).isAfter(moment(userLastReadAt));
+};
 
 const changeRoom = async (room) => {
   await updateCurrentRoom(room);
   await fetchChats(currentRoom.value.id);
+  await updateLastReadAt(room.id);
 };
 
 const checkIfRoomExist = async (user) => {
@@ -119,11 +148,6 @@ const checkIfRoomExist = async (user) => {
     isRoomMode.value = true;
     searchQuery.value = '';
   } else {
-    // currentRoom.roomId = 0;
-    // currentRoom.userId = user.id;
-    // currentRoom.username = `${user.first_name} ${user.last_name}`;
-    // emit('current-room', currentRoom);
-    // console.log(user.first_name)
     roomIsNotFound(user);
     isRoomMode.value = true;
     searchQuery.value = '';
@@ -140,7 +164,16 @@ const searchUser = async () => {
 };
 
 const logout = async () => {
-  const result = await axios.post('/logout');
-  console.log(result);
+  localStorage.clear();
+  await router.push('/login');
+};
+
+const trimMessage = (message, userId) => {
+  let trimmedMessage = message;
+  const length = currentUser.id === userId ? 25 : 29;
+  if (trimmedMessage.length > 29) {
+    trimmedMessage = trimmedMessage.substring(0, length) + '...';
+  }
+  return trimmedMessage;
 };
 </script>

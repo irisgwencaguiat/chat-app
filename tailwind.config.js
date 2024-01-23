@@ -2,7 +2,11 @@
 module.exports = {
   content: ['./public/**/*.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'messenger-timestamp-color': '#333536',
+      },
+    },
     fontFamily: {
       Roboto: ['Roboto, san-serif'],
     },

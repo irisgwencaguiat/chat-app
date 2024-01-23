@@ -1,6 +1,6 @@
 <template>
   <div class="font-Roboto bg-violet-200 flex min-h-screen max-h-screen">
-    <RouterView />
+    <RouterView :key="$route.fullPath" />
   </div>
 </template>
 
